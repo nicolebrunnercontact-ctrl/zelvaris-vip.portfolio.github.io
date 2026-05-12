@@ -1,0 +1,1483 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VIP Multi-Market Wealth Portfolio</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@300;400;500&family=Cabinet+Grotesk:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --purple: #a855f7;
+    --purple-dark: #7c3aed;
+    --orange: #f97316;
+    --gold: #eab308;
+    --gold-light: #fde047;
+    --blue: #3b82f6;
+    --green: #22c55e;
+    --pink: #ec4899;
+    --cyan: #06b6d4;
+    --red: #ef4444;
+    --bg: #050508;
+    --bg2: #080b12;
+    --surface: rgba(255,255,255,0.03);
+    --border: rgba(255,255,255,0.07);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: #e2e8f0;
+    font-family: 'Cabinet Grotesk', sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--purple-dark); border-radius: 2px; }
+
+  /* Noise texture overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 1000;
+    opacity: 0.4;
+  }
+
+  /* Glass card */
+  .glass {
+    background: rgba(255,255,255,0.03);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.07);
+    transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  .glass:hover { border-color: rgba(255,255,255,0.12); }
+
+  /* Glow variants */
+  .glow-purple { box-shadow: 0 0 40px rgba(168,85,247,0.12), inset 0 0 40px rgba(168,85,247,0.03); }
+  .glow-purple:hover { box-shadow: 0 0 60px rgba(168,85,247,0.25), inset 0 0 40px rgba(168,85,247,0.05); }
+  .glow-orange { box-shadow: 0 0 40px rgba(249,115,22,0.12); }
+  .glow-orange:hover { box-shadow: 0 0 60px rgba(249,115,22,0.25); }
+  .glow-gold { box-shadow: 0 0 40px rgba(234,179,8,0.12); }
+  .glow-gold:hover { box-shadow: 0 0 60px rgba(234,179,8,0.25); }
+  .glow-blue { box-shadow: 0 0 40px rgba(59,130,246,0.12); }
+  .glow-blue:hover { box-shadow: 0 0 60px rgba(59,130,246,0.25); }
+  .glow-green { box-shadow: 0 0 40px rgba(34,197,94,0.12); }
+  .glow-green:hover { box-shadow: 0 0 60px rgba(34,197,94,0.25); }
+  .glow-pink { box-shadow: 0 0 40px rgba(236,72,153,0.15), inset 0 0 60px rgba(236,72,153,0.04); }
+  .glow-pink:hover { box-shadow: 0 0 80px rgba(236,72,153,0.3), inset 0 0 60px rgba(236,72,153,0.08); }
+  .glow-cyan { box-shadow: 0 0 40px rgba(6,182,212,0.12); }
+  .glow-cyan:hover { box-shadow: 0 0 60px rgba(6,182,212,0.25); }
+  .glow-red { box-shadow: 0 0 40px rgba(239,68,68,0.12); }
+  .glow-red:hover { box-shadow: 0 0 60px rgba(239,68,68,0.25); }
+
+  .hover-lift { transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1), box-shadow 0.4s; }
+  .hover-lift:hover { transform: translateY(-4px); }
+
+  /* Section headers */
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    opacity: 0.5;
+  }
+
+  .display-title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    line-height: 1.05;
+  }
+
+  /* Gradient text */
+  .grad-purple { background: linear-gradient(135deg, #a855f7, #ec4899); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .grad-gold { background: linear-gradient(135deg, #f59e0b, #fde047); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .grad-cyan { background: linear-gradient(135deg, #06b6d4, #3b82f6); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .grad-orange { background: linear-gradient(135deg, #f97316, #ef4444); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .grad-green { background: linear-gradient(135deg, #22c55e, #06b6d4); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+
+  /* Nav */
+  nav {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    z-index: 999;
+    background: rgba(5,5,8,0.85);
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid var(--border);
+  }
+
+  /* Background grid */
+  .grid-bg {
+    background-image: linear-gradient(rgba(168,85,247,0.03) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(168,85,247,0.03) 1px, transparent 1px);
+    background-size: 60px 60px;
+  }
+
+  /* Animated orbs */
+  .orb {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(80px);
+    opacity: 0.15;
+    animation: orbFloat 8s ease-in-out infinite;
+  }
+  .orb-1 { width: 500px; height: 500px; background: var(--purple); top: -10%; left: -10%; animation-delay: 0s; }
+  .orb-2 { width: 400px; height: 400px; background: var(--cyan); top: 30%; right: -10%; animation-delay: -3s; }
+  .orb-3 { width: 300px; height: 300px; background: var(--pink); bottom: 10%; left: 30%; animation-delay: -6s; }
+
+  @keyframes orbFloat {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    33% { transform: translate(30px, -30px) scale(1.05); }
+    66% { transform: translate(-20px, 20px) scale(0.95); }
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+  }
+
+  @keyframes ticker {
+    0% { transform: translateX(0); }
+    100% { transform: translateX(-50%); }
+  }
+
+  .ticker-wrap { overflow: hidden; }
+  .ticker-inner { display: flex; animation: ticker 30s linear infinite; width: max-content; }
+
+  /* Progress bars */
+  .progress-bar {
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.07);
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 1.5s cubic-bezier(0.23, 1, 0.32, 1);
+    width: 0;
+  }
+
+  /* Metric badge */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.25rem 0.75rem;
+    border-radius: 100px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    font-weight: 500;
+  }
+
+  /* Volatility meter */
+  .volt-arc {
+    stroke-dasharray: 220;
+    stroke-dashoffset: 220;
+    transition: stroke-dashoffset 1.5s cubic-bezier(0.23, 1, 0.32, 1);
+  }
+
+  /* Animated counter */
+  .counter { font-family: 'DM Mono', monospace; }
+
+  /* Pulse dot */
+  .pulse-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    animation: pulseDot 2s ease-in-out infinite;
+  }
+  @keyframes pulseDot {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 currentColor; }
+    50% { opacity: 0.7; box-shadow: 0 0 0 6px rgba(0,0,0,0); }
+  }
+
+  /* Section fade-in */
+  .fade-section { opacity: 0; transform: translateY(30px); }
+
+  /* VIP card shine */
+  .vip-card {
+    position: relative;
+    overflow: hidden;
+  }
+  .vip-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: conic-gradient(from 0deg, transparent 0deg, rgba(236,72,153,0.06) 60deg, transparent 120deg);
+    animation: vipSpin 8s linear infinite;
+  }
+  @keyframes vipSpin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+  /* Risk meter ring */
+  .risk-ring { transition: stroke-dashoffset 2s cubic-bezier(0.23, 1, 0.32, 1); }
+
+  /* Scanline effect */
+  .scanline::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px);
+    pointer-events: none;
+  }
+
+  /* Float animation for cards */
+  @keyframes cardFloat {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-6px); }
+  }
+  .float-anim { animation: cardFloat 4s ease-in-out infinite; }
+
+  /* Gradient borders */
+  .grad-border {
+    position: relative;
+  }
+  .grad-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    padding: 1px;
+    border-radius: inherit;
+    background: linear-gradient(135deg, rgba(168,85,247,0.4), rgba(6,182,212,0.4), rgba(236,72,153,0.4));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  .chart-container { position: relative; }
+
+  /* Responsive adjustments */
+  @media (max-width: 768px) {
+    .display-title { font-size: 2.5rem !important; }
+  }
+</style>
+</head>
+<body class="grid-bg">
+
+<!-- NAV -->
+<nav class="px-6 py-4 flex items-center justify-between">
+  <div class="flex items-center gap-3">
+    <div class="w-8 h-8 rounded-lg flex items-center justify-center" style="background: linear-gradient(135deg, #a855f7, #ec4899);">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="white"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+    </div>
+    <span class="font-bold text-sm tracking-wider" style="font-family:'Syne',sans-serif;">WEALTH<span class="grad-purple">PRO</span></span>
+  </div>
+  <div class="hidden md:flex items-center gap-6 text-xs" style="font-family:'DM Mono',monospace; opacity:0.6;">
+    <a href="#hero" class="hover:opacity-100 transition-opacity">Portfolio</a>
+    <a href="#allocation" class="hover:opacity-100 transition-opacity">Allokation</a>
+    <a href="#crypto" class="hover:opacity-100 transition-opacity">Crypto</a>
+    <a href="#performance" class="hover:opacity-100 transition-opacity">Performance</a>
+    <a href="#risk" class="hover:opacity-100 transition-opacity">Risiko</a>
+  </div>
+  <div class="flex items-center gap-2">
+    <div class="pulse-dot" style="background: #22c55e; color: #22c55e;"></div>
+    <span class="text-xs" style="font-family:'DM Mono',monospace; color:#22c55e;">LIVE</span>
+  </div>
+</nav>
+
+<!-- TICKER BAR -->
+<div class="ticker-wrap fixed top-[57px] w-full z-50" style="background:rgba(5,5,8,0.9); border-bottom:1px solid var(--border); padding:6px 0;">
+  <div class="ticker-inner text-xs gap-12 px-4" style="font-family:'DM Mono',monospace;">
+    <span class="opacity-60 mr-12">PORTFOLIO</span>
+    <span class="text-green-400 mr-12">S&P 500 ▲ +1.24%</span>
+    <span class="text-green-400 mr-12">BTC ▲ +3.47%</span>
+    <span class="text-red-400 mr-12">ETH ▼ -0.82%</span>
+    <span class="text-green-400 mr-12">NVDA ▲ +2.15%</span>
+    <span class="text-gold-400 mr-12" style="color:#eab308;">GOLD ▲ +0.63%</span>
+    <span class="text-green-400 mr-12">MSFT ▲ +0.94%</span>
+    <span class="text-red-400 mr-12">AAPL ▼ -0.31%</span>
+    <span class="text-green-400 mr-12">AMZN ▲ +1.88%</span>
+    <span class="opacity-60 mr-12">●</span>
+    <!-- Duplicate for seamless loop -->
+    <span class="opacity-60 mr-12">PORTFOLIO</span>
+    <span class="text-green-400 mr-12">S&P 500 ▲ +1.24%</span>
+    <span class="text-green-400 mr-12">BTC ▲ +3.47%</span>
+    <span class="text-red-400 mr-12">ETH ▼ -0.82%</span>
+    <span class="text-green-400 mr-12">NVDA ▲ +2.15%</span>
+    <span class="text-gold-400 mr-12" style="color:#eab308;">GOLD ▲ +0.63%</span>
+    <span class="text-green-400 mr-12">MSFT ▲ +0.94%</span>
+    <span class="text-red-400 mr-12">AAPL ▼ -0.31%</span>
+    <span class="text-green-400 mr-12">AMZN ▲ +1.88%</span>
+  </div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="relative" style="padding-top: 97px;">
+
+  <!-- ORBS -->
+  <div style="position:fixed; inset:0; overflow:hidden; pointer-events:none; z-index:0;">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- INTRO: INDIVIDUELLES PORTFOLIO -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <section class="relative px-4 md:px-10 pt-16 pb-10 fade-section" style="z-index:2;">
+    <div class="max-w-7xl mx-auto">
+      <div class="glass rounded-3xl p-8 md:p-12 grad-border" style="background: linear-gradient(135deg, rgba(168,85,247,0.05), rgba(6,182,212,0.04), rgba(236,72,153,0.04));">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-10 items-center">
+
+          <!-- Left: Label + Names -->
+          <div>
+            <div class="section-label mb-5" style="color:#ec4899; letter-spacing:0.25em;">Individuelles Portfolio</div>
+            <div class="space-y-5">
+
+              <div class="flex items-start gap-4">
+                <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center text-base" style="background:linear-gradient(135deg,#a855f7,#ec4899);">👤</div>
+                <div>
+                  <div class="section-label mb-1">Investor/in</div>
+                  <div class="text-xl font-bold" style="font-family:'Syne',sans-serif; color:#e2e8f0;">Frau Sylvia Prinzler</div>
+                </div>
+              </div>
+
+              <div class="flex items-start gap-4">
+                <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center text-base" style="background:linear-gradient(135deg,#3b82f6,#06b6d4);">💼</div>
+                <div>
+                  <div class="section-label mb-1">Leitender Finanzexperte</div>
+                  <div class="text-xl font-bold" style="font-family:'Syne',sans-serif; color:#e2e8f0;">Herr Leonard White</div>
+                </div>
+              </div>
+
+              <div class="flex items-start gap-4">
+                <div class="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center text-base" style="background:linear-gradient(135deg,#eab308,#f97316);">⭐</div>
+                <div>
+                  <div class="section-label mb-1">Projektautorin · Mentorin · Expertin</div>
+                  <div class="text-xl font-bold" style="font-family:'Syne',sans-serif; color:#e2e8f0;">Frau Nicole Brunner</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Right: Decorative badge -->
+          <div class="flex flex-col items-center justify-center text-center gap-4">
+            <div class="relative">
+              <div style="width:140px;height:140px;border-radius:50%;background:linear-gradient(135deg,rgba(168,85,247,0.15),rgba(6,182,212,0.15));border:1px solid rgba(168,85,247,0.3);display:flex;align-items:center;justify-content:center;flex-direction:column;animation:cardFloat 4s ease-in-out infinite;">
+                <div class="text-4xl mb-1">💎</div>
+                <div class="section-label" style="color:#a855f7;">VIP LEVEL</div>
+              </div>
+              <!-- Orbit ring -->
+              <div style="position:absolute;inset:-12px;border-radius:50%;border:1px dashed rgba(168,85,247,0.25);animation:vipSpin 12s linear infinite;"></div>
+            </div>
+            <div class="text-sm text-gray-400 max-w-xs" style="font-family:'DM Mono',monospace; font-size:0.7rem;">
+              Maßgeschneidertes institutionelles Portfolio<br>für gehobene Privatanleger
+            </div>
+            <div class="flex gap-2 flex-wrap justify-center">
+              <span class="badge" style="background:rgba(168,85,247,0.15);color:#a855f7;">Individuell</span>
+              <span class="badge" style="background:rgba(34,197,94,0.15);color:#22c55e;">✓ VIP Aktiv</span>
+              <span class="badge" style="background:rgba(234,179,8,0.15);color:#eab308;">Premium</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- SECTION 1: HERO -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <section id="hero" class="relative min-h-screen px-4 md:px-10 py-20 fade-section" style="z-index:2;">
+    <div class="max-w-7xl mx-auto">
+
+      <!-- Title -->
+      <div class="mb-16 text-center">
+        <div class="section-label mb-4">VIP Private Banking · Institutional Grade</div>
+        <h1 class="display-title text-5xl md:text-7xl mb-6">
+          VIP Multi-Market<br><span class="grad-purple">Wealth Portfolio</span>
+        </h1>
+        <p class="text-gray-400 max-w-xl mx-auto" style="font-size:0.95rem;">Professionelle Kapitalverwaltung mit institutioneller Infrastruktur und KI-gestützter Marktanalyse.</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+        <!-- Capital Card -->
+        <div class="glass rounded-3xl p-8 glow-purple hover-lift grad-border">
+          <div class="section-label mb-3">Gesamtkapital</div>
+          <div class="text-5xl md:text-6xl font-bold counter grad-cyan mb-2" id="capitalCounter">€0</div>
+          <div class="progress-bar mt-4 mb-6"><div class="progress-fill" style="background: linear-gradient(90deg, #a855f7, #06b6d4);" data-width="85"></div></div>
+          <div class="space-y-3 text-sm">
+            <div class="flex justify-between items-center">
+              <span class="text-gray-400">Jährliche Zielrendite</span>
+              <span class="badge" style="background:rgba(168,85,247,0.15); color:#a855f7;">15–22%</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-gray-400">Risikoprofil</span>
+              <span class="badge" style="background:rgba(249,115,22,0.15); color:#f97316;">Moderate Aggressive</span>
+            </div>
+            <div class="flex justify-between items-center">
+              <span class="text-gray-400">VIP Status</span>
+              <span class="badge" style="background:rgba(34,197,94,0.15); color:#22c55e;">✓ Aktiviert</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Donut Chart -->
+        <div class="glass rounded-3xl p-6 hover-lift">
+          <div class="section-label mb-3">Allokationsübersicht</div>
+          <div style="height:220px; position:relative;">
+            <canvas id="portfolioChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Metrics Grid -->
+        <div class="grid grid-cols-2 gap-4">
+          <div class="glass rounded-2xl p-5 glow-green hover-lift">
+            <div class="section-label mb-2">Proj. Return</div>
+            <div class="text-3xl font-bold grad-green counter" id="returnCounter">0%</div>
+            <div class="text-xs text-gray-400 mt-1">+18.5% ø</div>
+          </div>
+          <div class="glass rounded-2xl p-5 glow-blue hover-lift">
+            <div class="section-label mb-2">Sharpe Ratio</div>
+            <div class="text-3xl font-bold grad-cyan counter" id="sharpeCounter">0.0</div>
+            <div class="text-xs text-gray-400 mt-1">Risikoadj.</div>
+          </div>
+          <div class="glass rounded-2xl p-5 glow-gold hover-lift">
+            <div class="section-label mb-2">Diversifi-kation</div>
+            <div class="text-3xl font-bold grad-gold">7</div>
+            <div class="text-xs text-gray-400 mt-1">Asset-Klassen</div>
+          </div>
+          <div class="glass rounded-2xl p-5 glow-purple hover-lift">
+            <div class="section-label mb-2">Max DrawD.</div>
+            <div class="text-3xl font-bold" style="color:#ef4444;">-8.2%</div>
+            <div class="text-xs text-gray-400 mt-1">Kontrolliert</div>
+          </div>
+          <div class="glass rounded-2xl p-5 col-span-2 hover-lift" style="background: linear-gradient(135deg, rgba(6,182,212,0.08), rgba(59,130,246,0.08)); border-color:rgba(6,182,212,0.2);">
+            <div class="section-label mb-2">Proj. Kapital (3J)</div>
+            <div class="text-3xl font-bold grad-cyan">€<span id="projCapCounter">0</span></div>
+            <div class="progress-bar mt-2"><div class="progress-fill" style="background: linear-gradient(90deg, #06b6d4, #3b82f6);" data-width="68"></div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mini sparklines row -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="glass rounded-2xl p-4 hover-lift glow-purple">
+          <div class="flex justify-between items-start mb-2">
+            <span class="text-xs text-gray-400">S&P 500</span>
+            <span class="text-xs text-green-400">+24.6%</span>
+          </div>
+          <canvas id="spark1" height="40"></canvas>
+        </div>
+        <div class="glass rounded-2xl p-4 hover-lift glow-orange">
+          <div class="flex justify-between items-start mb-2">
+            <span class="text-xs text-gray-400">Bitcoin</span>
+            <span class="text-xs text-green-400">+142%</span>
+          </div>
+          <canvas id="spark2" height="40"></canvas>
+        </div>
+        <div class="glass rounded-2xl p-4 hover-lift glow-gold">
+          <div class="flex justify-between items-start mb-2">
+            <span class="text-xs text-gray-400">Gold (XAU)</span>
+            <span class="text-xs text-green-400">+18.3%</span>
+          </div>
+          <canvas id="spark3" height="40"></canvas>
+        </div>
+        <div class="glass rounded-2xl p-4 hover-lift glow-cyan">
+          <div class="flex justify-between items-start mb-2">
+            <span class="text-xs text-gray-400">NVIDIA</span>
+            <span class="text-xs text-green-400">+215%</span>
+          </div>
+          <canvas id="spark4" height="40"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- SECTION 2: VIP STATUS -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <section id="vip" class="relative px-4 md:px-10 py-20 fade-section" style="z-index:2;">
+    <div class="max-w-7xl mx-auto">
+      <div class="vip-card glass rounded-3xl p-10 glow-pink grad-border" style="background: linear-gradient(135deg, rgba(236,72,153,0.05), rgba(168,85,247,0.08), rgba(6,182,212,0.05));">
+        <div class="relative z-10">
+          <div class="section-label mb-4" style="color:#ec4899;">Premium Access Level</div>
+          <h2 class="display-title text-4xl md:text-5xl mb-3">
+            <span class="grad-purple">VIP Investor Status</span> Activated
+          </h2>
+          <p class="text-gray-400 mb-10 text-sm max-w-lg">Sie genießen vollständigen Zugang zur institutionellen Infrastruktur und exklusiven Marktvorteilen.</p>
+          <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <div class="vip-feature glass rounded-2xl p-5 hover-lift" style="border-color:rgba(236,72,153,0.2);">
+              <div class="text-2xl mb-3">🌐</div>
+              <div class="font-semibold text-sm mb-1" style="color:#ec4899;">Expanded Market Access</div>
+              <div class="text-xs text-gray-400">Globale Märkte, 24/7 Zugang</div>
+            </div>
+            <div class="vip-feature glass rounded-2xl p-5 hover-lift" style="border-color:rgba(168,85,247,0.2);">
+              <div class="text-2xl mb-3">⚡</div>
+              <div class="font-semibold text-sm mb-1" style="color:#a855f7;">Professional Trading</div>
+              <div class="text-xs text-gray-400">Institutionelle Handelstools</div>
+            </div>
+            <div class="vip-feature glass rounded-2xl p-5 hover-lift" style="border-color:rgba(234,179,8,0.2);">
+              <div class="text-2xl mb-3">💎</div>
+              <div class="font-semibold text-sm mb-1" style="color:#eab308;">Exclusive Projects</div>
+              <div class="text-xs text-gray-400">Pre-IPO & Private Equity</div>
+            </div>
+            <div class="vip-feature glass rounded-2xl p-5 hover-lift" style="border-color:rgba(6,182,212,0.2);">
+              <div class="text-2xl mb-3">🛡️</div>
+              <div class="font-semibold text-sm mb-1" style="color:#06b6d4;">Priority Capital Mgmt</div>
+              <div class="text-xs text-gray-400">Dedizierter Portfoliomanager</div>
+            </div>
+            <div class="vip-feature glass rounded-2xl p-5 hover-lift" style="border-color:rgba(34,197,94,0.2);">
+              <div class="text-2xl mb-3">🔗</div>
+              <div class="font-semibold text-sm mb-1" style="color:#22c55e;">Multi-Market Integration</div>
+              <div class="text-xs text-gray-400">Cross-Asset-Strategie</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- SECTION 3: ALLOCATION -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <section id="allocation" class="relative px-4 md:px-10 py-20 fade-section" style="z-index:2;">
+    <div class="max-w-7xl mx-auto">
+      <div class="section-label mb-4">Asset Allokation</div>
+      <h2 class="display-title text-4xl md:text-5xl mb-12">Portfolio <span class="grad-cyan">Allocation</span></h2>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="glass rounded-3xl p-8 hover-lift">
+          <div style="height: 360px; position:relative;">
+            <canvas id="allocationChart"></canvas>
+          </div>
+        </div>
+        <div class="space-y-4">
+          <div id="alloc-bars"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- SECTION 4: ETF & BLUE CHIPS -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <section class="relative px-4 md:px-10 py-20 fade-section" style="z-index:2;">
+    <div class="max-w-7xl mx-auto">
+      <div class="section-label mb-4" style="color:#3b82f6;">Stability Core</div>
+      <h2 class="display-title text-4xl md:text-5xl mb-12">ETF & <span class="grad-cyan">Blue Chips</span> · 25%</h2>
+
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 glass rounded-3xl p-6 glow-blue hover-lift">
+          <div class="section-label mb-4">12-Monats Performance</div>
+          <canvas id="etfChart" height="200"></canvas>
+        </div>
+        <div class="grid grid-cols-2 lg:grid-cols-1 gap-4">
+          <div id="etf-stocks"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- SECTION 5: AI & TECH -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <section class="relative px-4 md:px-10 py-20 fade-section" style="z-index:2;">
+    <div class="max-w-7xl mx-auto">
+      <div class="section-label mb-4" style="color:#a855f7;">Wachstumstreiber</div>
+      <h2 class="display-title text-4xl md:text-5xl mb-12">AI & <span class="grad-purple">Technology</span> · 20%</h2>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-2 glass rounded-3xl p-6 glow-purple hover-lift">
+          <div class="section-label mb-4">AI Market Growth Projection</div>
+          <canvas id="aiChart" height="200"></canvas>
+        </div>
+        <div class="space-y-3" id="ai-stocks"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- SECTION 6: CRYPTO -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <section id="crypto" class="relative px-4 md:px-10 py-20 fade-section" style="z-index:2;">
+    <div class="max-w-7xl mx-auto">
+      <div class="section-label mb-4" style="color:#f97316;">Digital Assets</div>
+      <h2 class="display-title text-4xl md:text-5xl mb-12"><span class="grad-orange">Crypto</span> Portfolio · 15%</h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <!-- BTC Card -->
+        <div class="glass rounded-3xl p-6 glow-orange hover-lift float-anim">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold" style="background:linear-gradient(135deg,#f97316,#ef4444);">₿</div>
+            <div>
+              <div class="font-bold">Bitcoin</div>
+              <div class="section-label">BTC · 70%</div>
+            </div>
+            <span class="ml-auto text-xs text-green-400">▲ +142%</span>
+          </div>
+          <canvas id="btcChart" height="80"></canvas>
+          <div class="mt-3 flex justify-between text-xs text-gray-400">
+            <span>Allokiert: €10.500</span>
+            <span style="color:#f97316;">Digital Gold</span>
+          </div>
+        </div>
+        <!-- ETH Card -->
+        <div class="glass rounded-3xl p-6 hover-lift" style="border-color:rgba(99,102,241,0.3); box-shadow:0 0 40px rgba(99,102,241,0.1);" >
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold" style="background:linear-gradient(135deg,#6366f1,#a855f7);">Ξ</div>
+            <div>
+              <div class="font-bold">Ethereum</div>
+              <div class="section-label">ETH · 20%</div>
+            </div>
+            <span class="ml-auto text-xs text-red-400">▼ -0.82%</span>
+          </div>
+          <canvas id="ethChart" height="80"></canvas>
+          <div class="mt-3 flex justify-between text-xs text-gray-400">
+            <span>Allokiert: €3.000</span>
+            <span style="color:#6366f1;">Smart Contracts</span>
+          </div>
+        </div>
+        <!-- Alpha Card -->
+        <div class="glass rounded-3xl p-6 hover-lift" style="border-color:rgba(34,197,94,0.3); box-shadow:0 0 40px rgba(34,197,94,0.1);">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold" style="background:linear-gradient(135deg,#22c55e,#06b6d4);">α</div>
+            <div>
+              <div class="font-bold">Alpha Assets</div>
+              <div class="section-label">ALT · 10%</div>
+            </div>
+            <span class="ml-auto text-xs text-green-400">▲ +89%</span>
+          </div>
+          <canvas id="altChart" height="80"></canvas>
+          <div class="mt-3 flex justify-between text-xs text-gray-400">
+            <span>Allokiert: €1.500</span>
+            <span style="color:#22c55e;">High Alpha</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Volatility + Dominance Row -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div class="glass rounded-3xl p-6 hover-lift">
+          <div class="section-label mb-4">Volatilitäts-Meter</div>
+          <div class="flex items-center justify-center gap-8">
+            <div class="relative" style="width:140px;height:140px;">
+              <svg viewBox="0 0 140 140" style="width:140px;height:140px;transform:rotate(-90deg)">
+                <circle cx="70" cy="70" r="55" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="12"/>
+                <circle cx="70" cy="70" r="55" fill="none" stroke="url(#voltGrad)" stroke-width="12" stroke-linecap="round" class="volt-arc" id="voltArc" style="stroke-dasharray:345; stroke-dashoffset:200;"/>
+                <defs>
+                  <linearGradient id="voltGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color:#22c55e"/>
+                    <stop offset="50%" style="stop-color:#eab308"/>
+                    <stop offset="100%" style="stop-color:#ef4444"/>
+                  </linearGradient>
+                </defs>
+              </svg>
+              <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+                <div class="text-2xl font-bold" style="color:#eab308;">42</div>
+                <div class="text-xs text-gray-400">VIX-äquiv.</div>
+              </div>
+            </div>
+            <div class="space-y-3 text-sm">
+              <div><span style="color:#22c55e;">●</span> <span class="text-gray-400">Niedrig</span> <span class="ml-2">0–25</span></div>
+              <div><span style="color:#eab308;">●</span> <span class="text-gray-400">Mittel</span> <span class="ml-2">26–50</span></div>
+              <div><span style="color:#ef4444;">●</span> <span class="text-gray-400">Hoch</span> <span class="ml-2">51–100</span></div>
+              <div class="mt-4 text-xs badge" style="background:rgba(234,179,8,0.15);color:#eab308;">Moderate Volatility</div>
+            </div>
+          </div>
+        </div>
+        <div class="glass rounded-3xl p-6 hover-lift">
+          <div class="section-label mb-4">Crypto Dominanz</div>
+          <canvas id="domChart" height="160"></canvas>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- SECTION 7: PRECIOUS METALS -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <section class="relative px-4 md:px-10 py-20 fade-section" style="z-index:2;">
+    <div class="max-w-7xl mx-auto">
+      <div class="section-label mb-4" style="color:#eab308;">Inflationsschutz</div>
+      <h2 class="display-title text-4xl md:text-5xl mb-12">Precious <span class="grad-gold">Metals</span> · 10%</h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <!-- Gold -->
+        <div class="glass rounded-3xl p-8 hover-lift" style="background:linear-gradient(135deg, rgba(234,179,8,0.06), rgba(245,158,11,0.04)); border-color:rgba(234,179,8,0.25); box-shadow:0 0 50px rgba(234,179,8,0.12);">
+          <div class="text-4xl mb-4">🥇</div>
+          <div class="section-label mb-1" style="color:#eab308;">Gold (XAU)</div>
+          <div class="text-3xl font-bold grad-gold mb-1">50%</div>
+          <div class="text-sm text-gray-400 mb-4">€5.000 allokiert</div>
+          <div class="progress-bar"><div class="progress-fill" style="background:linear-gradient(90deg,#f59e0b,#fde047);" data-width="50"></div></div>
+          <div class="mt-4 text-xs badge" style="background:rgba(234,179,8,0.15);color:#eab308;">+18.3% YTD</div>
+        </div>
+        <!-- Silver -->
+        <div class="glass rounded-3xl p-8 hover-lift" style="border-color:rgba(148,163,184,0.25); box-shadow:0 0 50px rgba(148,163,184,0.08);">
+          <div class="text-4xl mb-4">🥈</div>
+          <div class="section-label mb-1">Silver (XAG)</div>
+          <div class="text-3xl font-bold mb-1" style="color:#94a3b8;">30%</div>
+          <div class="text-sm text-gray-400 mb-4">€3.000 allokiert</div>
+          <div class="progress-bar"><div class="progress-fill" style="background:linear-gradient(90deg,#94a3b8,#cbd5e1);" data-width="30"></div></div>
+          <div class="mt-4 text-xs badge" style="background:rgba(148,163,184,0.15);color:#94a3b8;">+12.7% YTD</div>
+        </div>
+        <!-- Platinum -->
+        <div class="glass rounded-3xl p-8 hover-lift" style="border-color:rgba(6,182,212,0.25); box-shadow:0 0 50px rgba(6,182,212,0.08);">
+          <div class="text-4xl mb-4">🥉</div>
+          <div class="section-label mb-1" style="color:#06b6d4;">Platinum (XPT)</div>
+          <div class="text-3xl font-bold grad-cyan mb-1">20%</div>
+          <div class="text-sm text-gray-400 mb-4">€2.000 allokiert</div>
+          <div class="progress-bar"><div class="progress-fill" style="background:linear-gradient(90deg,#06b6d4,#3b82f6);" data-width="20"></div></div>
+          <div class="mt-4 text-xs badge" style="background:rgba(6,182,212,0.15);color:#06b6d4;">+8.9% YTD</div>
+        </div>
+      </div>
+
+      <!-- Inflation Protection Bar -->
+      <div class="glass rounded-3xl p-6 hover-lift glow-gold">
+        <div class="section-label mb-6">Inflationsschutz & Krisenabsicherung</div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div class="text-center">
+            <div class="text-xs text-gray-400 mb-2">Inflationskorrelation</div>
+            <div class="relative mx-auto" style="width:80px;height:80px;">
+              <svg viewBox="0 0 80 80" style="width:80px;height:80px;transform:rotate(-90deg)">
+                <circle cx="40" cy="40" r="30" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="8"/>
+                <circle cx="40" cy="40" r="30" fill="none" stroke="#eab308" stroke-width="8" stroke-linecap="round" stroke-dasharray="188" stroke-dashoffset="47"/>
+              </svg>
+              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:1rem;color:#eab308;">75%</div>
+            </div>
+          </div>
+          <div class="text-center">
+            <div class="text-xs text-gray-400 mb-2">Krisenhedge-Stärke</div>
+            <div class="relative mx-auto" style="width:80px;height:80px;">
+              <svg viewBox="0 0 80 80" style="width:80px;height:80px;transform:rotate(-90deg)">
+                <circle cx="40" cy="40" r="30" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="8"/>
+                <circle cx="40" cy="40" r="30" fill="none" stroke="#22c55e" stroke-width="8" stroke-linecap="round" stroke-dasharray="188" stroke-dashoffset="38"/>
+              </svg>
+              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:1rem;color:#22c55e;">80%</div>
+            </div>
+          </div>
+          <div class="text-center">
+            <div class="text-xs text-gray-400 mb-2">Liquiditäts-Score</div>
+            <div class="relative mx-auto" style="width:80px;height:80px;">
+              <svg viewBox="0 0 80 80" style="width:80px;height:80px;transform:rotate(-90deg)">
+                <circle cx="40" cy="40" r="30" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="8"/>
+                <circle cx="40" cy="40" r="30" fill="none" stroke="#06b6d4" stroke-width="8" stroke-linecap="round" stroke-dasharray="188" stroke-dashoffset="94"/>
+              </svg>
+              <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:1rem;color:#06b6d4;">50%</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- SECTION 8: STABILITY & LIQUIDITY -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <section class="relative px-4 md:px-10 py-20 fade-section" style="z-index:2;">
+    <div class="max-w-7xl mx-auto">
+      <div class="section-label mb-4" style="color:#22c55e;">Kapitalschutz</div>
+      <h2 class="display-title text-4xl md:text-5xl mb-12">Stability & <span class="grad-green">Liquidity</span></h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="glass rounded-3xl p-6 glow-blue hover-lift">
+          <div class="text-3xl mb-3">📊</div>
+          <div class="section-label mb-2" style="color:#3b82f6;">Bonds / Stabilität</div>
+          <div class="text-3xl font-bold grad-cyan mb-1">€10.000</div>
+          <div class="text-xs text-gray-400 mb-4">10% des Portfolios</div>
+          <div class="space-y-2 text-xs text-gray-400">
+            <div class="flex justify-between"><span>Euro Gov Bonds</span><span class="text-blue-400">50%</span></div>
+            <div class="progress-bar"><div class="progress-fill" style="background:#3b82f6;" data-width="50"></div></div>
+            <div class="flex justify-between"><span>IG Corporate Bonds</span><span class="text-blue-400">30%</span></div>
+            <div class="progress-bar"><div class="progress-fill" style="background:#60a5fa;" data-width="30"></div></div>
+            <div class="flex justify-between"><span>Inflation-Linked</span><span class="text-blue-400">20%</span></div>
+            <div class="progress-bar"><div class="progress-fill" style="background:#93c5fd;" data-width="20"></div></div>
+          </div>
+        </div>
+        <div class="glass rounded-3xl p-6 glow-green hover-lift">
+          <div class="text-3xl mb-3">💧</div>
+          <div class="section-label mb-2" style="color:#22c55e;">Taktische Reserve</div>
+          <div class="text-3xl font-bold grad-green mb-1">€10.000</div>
+          <div class="text-xs text-gray-400 mb-4">10% des Portfolios</div>
+          <div class="space-y-3">
+            <div class="glass rounded-xl p-3" style="background:rgba(34,197,94,0.06);">
+              <div class="text-xs text-gray-400">Cash-Equivalent</div>
+              <div class="text-green-400 font-bold">€6.000</div>
+            </div>
+            <div class="glass rounded-xl p-3" style="background:rgba(34,197,94,0.06);">
+              <div class="text-xs text-gray-400">Money Market Fonds</div>
+              <div class="text-green-400 font-bold">€4.000</div>
+            </div>
+          </div>
+        </div>
+        <div class="glass rounded-3xl p-6 hover-lift" style="background:linear-gradient(135deg,rgba(6,182,212,0.06),rgba(34,197,94,0.06)); border-color:rgba(6,182,212,0.2);">
+          <div class="text-3xl mb-3">🛡️</div>
+          <div class="section-label mb-2" style="color:#06b6d4;">Liquiditätsschutz</div>
+          <div class="text-3xl font-bold grad-cyan mb-4">98.5%</div>
+          <div class="space-y-3 text-xs">
+            <div class="flex items-center gap-2"><span style="color:#22c55e;">✓</span><span class="text-gray-300">Same-Day Liquidierbarkeit</span></div>
+            <div class="flex items-center gap-2"><span style="color:#22c55e;">✓</span><span class="text-gray-300">Keine Lock-up-Perioden</span></div>
+            <div class="flex items-center gap-2"><span style="color:#22c55e;">✓</span><span class="text-gray-300">Emergency Reserve verfügbar</span></div>
+            <div class="flex items-center gap-2"><span style="color:#22c55e;">✓</span><span class="text-gray-300">Automatisches Rebalancing</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- SECTION 9: PERFORMANCE PROJECTION -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <section id="performance" class="relative px-4 md:px-10 py-20 fade-section" style="z-index:2;">
+    <div class="max-w-7xl mx-auto">
+      <div class="section-label mb-4" style="color:#a855f7;">Zukunftsprojektion</div>
+      <h2 class="display-title text-4xl md:text-5xl mb-12">Performance <span class="grad-purple">Projection</span></h2>
+
+      <!-- Scenario Tabs -->
+      <div class="flex gap-3 mb-8">
+        <button onclick="switchScenario('conservative')" id="tab-conservative" class="scenario-tab px-5 py-2 rounded-xl text-sm font-medium transition-all" style="background:rgba(59,130,246,0.2); color:#3b82f6; border:1px solid rgba(59,130,246,0.3);">Conservative</button>
+        <button onclick="switchScenario('balanced')" id="tab-balanced" class="scenario-tab px-5 py-2 rounded-xl text-sm font-medium transition-all" style="background:rgba(168,85,247,0.3); color:#a855f7; border:1px solid rgba(168,85,247,0.5);">Balanced ✓</button>
+        <button onclick="switchScenario('aggressive')" id="tab-aggressive" class="scenario-tab px-5 py-2 rounded-xl text-sm font-medium transition-all" style="background:rgba(249,115,22,0.2); color:#f97316; border:1px solid rgba(249,115,22,0.3);">Aggressive</button>
+      </div>
+
+      <div class="glass rounded-3xl p-6 glow-purple hover-lift mb-8">
+        <canvas id="projectionChart" height="300"></canvas>
+      </div>
+
+      <!-- Milestones Grid -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4" id="milestones">
+        <div class="glass rounded-2xl p-5 hover-lift text-center">
+          <div class="section-label mb-2">1 Jahr</div>
+          <div class="text-2xl font-bold grad-green" id="p1y">€118.500</div>
+          <div class="text-xs text-gray-400 mt-1">+18.5%</div>
+        </div>
+        <div class="glass rounded-2xl p-5 hover-lift text-center" style="border-color:rgba(168,85,247,0.3);">
+          <div class="section-label mb-2">3 Jahre</div>
+          <div class="text-2xl font-bold grad-purple" id="p3y">€166.800</div>
+          <div class="text-xs text-gray-400 mt-1">+66.8%</div>
+        </div>
+        <div class="glass rounded-2xl p-5 hover-lift text-center">
+          <div class="section-label mb-2">5 Jahre</div>
+          <div class="text-2xl font-bold grad-cyan" id="p5y">€234.500</div>
+          <div class="text-xs text-gray-400 mt-1">+134.5%</div>
+        </div>
+        <div class="glass rounded-2xl p-5 hover-lift text-center" style="background:linear-gradient(135deg,rgba(234,179,8,0.08),rgba(245,158,11,0.05)); border-color:rgba(234,179,8,0.3);">
+          <div class="section-label mb-2">CAGR</div>
+          <div class="text-2xl font-bold grad-gold" id="pcagr">18.5%</div>
+          <div class="text-xs text-gray-400 mt-1">Jährlich</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- SECTION 10: RISK MANAGEMENT -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <section id="risk" class="relative px-4 md:px-10 py-20 fade-section" style="z-index:2;">
+    <div class="max-w-7xl mx-auto">
+      <div class="section-label mb-4" style="color:#ef4444;">Risk Control</div>
+      <h2 class="display-title text-4xl md:text-5xl mb-12">Professionelles <span class="grad-orange">Risikomanagement</span><br><span class="text-2xl md:text-3xl text-gray-400 font-normal">&amp; Kapitalabsicherung</span></h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Risk chart -->
+        <div class="glass rounded-3xl p-6 glow-red hover-lift scanline relative">
+          <div class="section-label mb-4" style="color:#ef4444;">Risiko-Verteilung</div>
+          <canvas id="riskChart" height="250"></canvas>
+        </div>
+        <!-- Risk features -->
+        <div class="grid grid-cols-1 gap-3" id="risk-features"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- SECTION 11: STRATEGIC RECOMMENDATIONS -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <section class="relative px-4 md:px-10 py-20 fade-section" style="z-index:2;">
+    <div class="max-w-7xl mx-auto">
+      <div class="section-label mb-4" style="color:#06b6d4;">Strategie</div>
+      <h2 class="display-title text-4xl md:text-5xl mb-12">Strategische <span class="grad-cyan">Empfehlungen</span></h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div class="glass rounded-2xl p-6 hover-lift glow-cyan">
+          <div class="text-2xl mb-3">🔄</div>
+          <div class="font-semibold mb-2" style="color:#06b6d4;">Regelmäßige Portfolio-Überprüfung</div>
+          <div class="text-sm text-gray-400">Monatliche Analyse aller Positionen und Performance-Bewertung gegen Benchmark.</div>
+        </div>
+        <div class="glass rounded-2xl p-6 hover-lift glow-purple">
+          <div class="text-2xl mb-3">⚡</div>
+          <div class="font-semibold mb-2" style="color:#a855f7;">Dynamische Strategieanpassung</div>
+          <div class="text-sm text-gray-400">Reaktion auf Marktveränderungen durch KI-gestützte Signale und Marktanalyse.</div>
+        </div>
+        <div class="glass rounded-2xl p-6 hover-lift glow-blue">
+          <div class="text-2xl mb-3">⚖️</div>
+          <div class="font-semibold mb-2" style="color:#3b82f6;">Rebalancing alle 3–6 Monate</div>
+          <div class="text-sm text-gray-400">Systematische Wiederherstellung der Zielallokation für optimales Risiko-Rendite-Profil.</div>
+        </div>
+        <div class="glass rounded-2xl p-6 hover-lift glow-gold">
+          <div class="text-2xl mb-3">🌱</div>
+          <div class="font-semibold mb-2" style="color:#eab308;">Langfristiger Anlagehorizont</div>
+          <div class="text-sm text-gray-400">5–10 Jahre Horizont maximiert den Zinseszinseffekt und minimiert kurzfristige Volatilität.</div>
+        </div>
+        <div class="glass rounded-2xl p-6 hover-lift glow-green">
+          <div class="text-2xl mb-3">🎯</div>
+          <div class="font-semibold mb-2" style="color:#22c55e;">Nutzung von Marktchancen</div>
+          <div class="text-sm text-gray-400">Taktische Reserve für opportunistische Zukäufe bei Marktkorrekturen bereithalten.</div>
+        </div>
+        <div class="glass rounded-2xl p-6 hover-lift" style="background:linear-gradient(135deg,rgba(236,72,153,0.06),rgba(168,85,247,0.06)); border-color:rgba(236,72,153,0.2);">
+          <div class="text-2xl mb-3">🔬</div>
+          <div class="font-semibold mb-2 grad-purple">Kontinuierliche Optimierung</div>
+          <div class="text-sm text-gray-400">Permanente Verbesserung der Strategie durch Backtesting und Faktoranalyse.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- SECTION 12: FINAL PREMIUM -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <section class="relative px-4 md:px-10 py-24 fade-section" style="z-index:2;">
+    <div class="max-w-7xl mx-auto">
+      <div class="vip-card glass rounded-3xl p-12 grad-border" style="background:linear-gradient(135deg,rgba(168,85,247,0.04),rgba(6,182,212,0.04),rgba(234,179,8,0.04));">
+        <div class="relative z-10 text-center mb-12">
+          <div class="section-label mb-4">Premium Wealth Infrastructure</div>
+          <h2 class="display-title text-4xl md:text-6xl mb-6">
+            Strategic <span class="grad-gold">Wealth</span><br><span class="grad-cyan">Positioning</span>
+          </h2>
+          <p class="text-gray-400 max-w-2xl mx-auto">Ihr Kapital ist optimal positioniert für nachhaltiges, diversifiziertes Wachstum mit institutioneller Absicherung.</p>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div class="glass rounded-2xl p-6 hover-lift text-center">
+            <div class="text-3xl mb-3">🌍</div>
+            <div class="font-semibold text-sm mb-1 grad-cyan">Multi-Market Diversifikation</div>
+            <div class="text-xs text-gray-400">7 Asset-Klassen, globale Märkte</div>
+          </div>
+          <div class="glass rounded-2xl p-6 hover-lift text-center">
+            <div class="text-3xl mb-3">🏛️</div>
+            <div class="font-semibold text-sm mb-1 grad-purple">Professionelle Kapitalstruktur</div>
+            <div class="text-xs text-gray-400">Institutionelle Allokation</div>
+          </div>
+          <div class="glass rounded-2xl p-6 hover-lift text-center" style="background:linear-gradient(135deg,rgba(236,72,153,0.08),rgba(168,85,247,0.08)); border-color:rgba(236,72,153,0.25);">
+            <div class="text-3xl mb-3">💎</div>
+            <div class="font-semibold text-sm mb-1" style="color:#ec4899;">VIP-Infrastruktur</div>
+            <div class="text-xs text-gray-400">Premium Services aktiv</div>
+          </div>
+          <div class="glass rounded-2xl p-6 hover-lift text-center">
+            <div class="text-3xl mb-3">🚀</div>
+            <div class="font-semibold text-sm mb-1 grad-orange">Zukunftsorientierte Strategie</div>
+            <div class="text-xs text-gray-400">AI, Crypto, Innovation</div>
+          </div>
+          <div class="glass rounded-2xl p-6 hover-lift text-center">
+            <div class="text-3xl mb-3">📈</div>
+            <div class="font-semibold text-sm mb-1 grad-green">Langfristiges Wachstum</div>
+            <div class="text-xs text-gray-400">Zinseszins optimiert</div>
+          </div>
+        </div>
+
+        <!-- Final capital projection bar -->
+        <div class="mt-10 glass rounded-2xl p-6" style="background:rgba(0,0,0,0.3);">
+          <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+            <div>
+              <div class="section-label mb-1">Startkapital</div>
+              <div class="text-2xl font-bold grad-cyan">€100.000</div>
+            </div>
+            <div class="flex-1 px-4">
+              <div class="relative">
+                <div class="progress-bar" style="height:8px;">
+                  <div class="progress-fill" style="background:linear-gradient(90deg,#a855f7,#06b6d4,#22c55e);" data-width="100"></div>
+                </div>
+                <div class="flex justify-between text-xs text-gray-400 mt-2">
+                  <span>2025</span><span>2026</span><span>2027</span><span>2028</span><span>2029</span><span>2030</span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="section-label mb-1">Proj. 5J (18.5% CAGR)</div>
+              <div class="text-2xl font-bold grad-gold">€234.500</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Mission Statement -->
+      <div class="mt-12 fade-section">
+        <div class="glass rounded-3xl p-10 md:p-14 text-center grad-border" style="background: linear-gradient(135deg, rgba(168,85,247,0.06), rgba(236,72,153,0.05), rgba(234,179,8,0.04)); position:relative; overflow:hidden;">
+          <!-- Shimmer bg -->
+          <div style="position:absolute;inset:0;background:conic-gradient(from 180deg at 50% 50%, transparent 0deg, rgba(168,85,247,0.04) 60deg, transparent 120deg, rgba(6,182,212,0.04) 180deg, transparent 240deg, rgba(236,72,153,0.04) 300deg, transparent 360deg);animation:vipSpin 20s linear infinite;pointer-events:none;"></div>
+
+          <div class="relative z-10">
+            <div class="section-label mb-6" style="color:#ec4899; letter-spacing:0.3em;">🎯 Unsere Mission</div>
+
+            <blockquote class="display-title text-3xl md:text-5xl mb-6" style="font-family:'Syne',sans-serif; font-weight:800; line-height:1.2;">
+              <span class="grad-purple">"Mit Intelligenz investieren.</span><br>
+              <span class="grad-cyan">Mit Vertrauen wachsen."</span>
+            </blockquote>
+
+            <div style="width:60px;height:2px;background:linear-gradient(90deg,#a855f7,#ec4899);margin:0 auto 2rem;border-radius:2px;"></div>
+
+            <p class="text-gray-300 text-lg mb-2" style="font-family:'Cabinet Grotesk',sans-serif;">
+              Wir freuen uns auf eine erfolgreiche langfristige Partnerschaft,
+            </p>
+            <p class="text-2xl font-bold mb-6" style="font-family:'Syne',sans-serif; background:linear-gradient(135deg,#a855f7,#ec4899,#eab308);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">
+              Frau Sylvia Prinzler! 🚀
+            </p>
+
+            <!-- Team signatures -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-10">
+              <div class="glass rounded-2xl p-5 hover-lift" style="border-color:rgba(168,85,247,0.25);">
+                <div class="text-2xl mb-2">👤</div>
+                <div class="font-bold text-sm mb-1">Frau Sylvia Prinzler</div>
+                <div class="section-label" style="color:#a855f7;">Investorin</div>
+              </div>
+              <div class="glass rounded-2xl p-5 hover-lift" style="border-color:rgba(6,182,212,0.25);">
+                <div class="text-2xl mb-2">💼</div>
+                <div class="font-bold text-sm mb-1">Herr Leonard White</div>
+                <div class="section-label" style="color:#06b6d4;">Leitender Finanzexperte</div>
+              </div>
+              <div class="glass rounded-2xl p-5 hover-lift" style="border-color:rgba(234,179,8,0.25);">
+                <div class="text-2xl mb-2">⭐</div>
+                <div class="font-bold text-sm mb-1">Frau Nicole Brunner</div>
+                <div class="section-label" style="color:#eab308;">Projektautorin · Mentorin · Expertin</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="mt-12 text-center text-xs text-gray-600" style="font-family:'DM Mono',monospace;">
+        <p>WealthPro Institutional Dashboard · Alle Projektionen sind Szenarien und keine Garantien · Stand: 2025</p>
+        <p class="mt-1">Erstellt für VIP-Kunden mit Kapital ≥ €100.000 · Professionelle Vermögensverwaltung</p>
+      </div>
+    </div>
+  </section>
+
+</div><!-- end main -->
+
+<script>
+gsap.registerPlugin(ScrollTrigger);
+
+/* ─── DATA ─── */
+const allocData = [
+  { label: 'ETF & Blue Chips', pct: 25, color: '#3b82f6', eur: 25000 },
+  { label: 'AI & Technology', pct: 20, color: '#a855f7', eur: 20000 },
+  { label: 'Crypto Assets', pct: 15, color: '#f97316', eur: 15000 },
+  { label: 'Precious Metals', pct: 10, color: '#eab308', eur: 10000 },
+  { label: 'Bonds / Stabilität', pct: 10, color: '#06b6d4', eur: 10000 },
+  { label: 'Taktische Reserve', pct: 10, color: '#22c55e', eur: 10000 },
+  { label: 'Alternative Alpha', pct: 10, color: '#ec4899', eur: 10000 },
+];
+
+const etfStocks = [
+  { name: 'S&P 500 ETF', sym: 'SPY', chg: '+24.6%', up: true },
+  { name: 'Nasdaq 100', sym: 'QQQ', chg: '+32.1%', up: true },
+  { name: 'MSCI World', sym: 'IWRD', chg: '+18.3%', up: true },
+  { name: 'Microsoft', sym: 'MSFT', chg: '+28.4%', up: true },
+  { name: 'Apple', sym: 'AAPL', chg: '-0.31%', up: false },
+  { name: 'Amazon', sym: 'AMZN', chg: '+41.2%', up: true },
+  { name: 'NVIDIA', sym: 'NVDA', chg: '+215%', up: true },
+];
+
+const aiStocks = [
+  { name: 'NVIDIA', weight: 30, color: '#22c55e' },
+  { name: 'Microsoft', weight: 25, color: '#3b82f6' },
+  { name: 'Alphabet', weight: 15, color: '#a855f7' },
+  { name: 'Amazon', weight: 12, color: '#f97316' },
+  { name: 'Meta', weight: 10, color: '#06b6d4' },
+  { name: 'TSMC', weight: 8, color: '#eab308' },
+];
+
+const riskFeatures = [
+  { icon: '🔀', title: 'Diversifizierte Kapitalstruktur', desc: '7 unkorrelierte Asset-Klassen', color: '#06b6d4' },
+  { icon: '⚖️', title: 'Portfolio-Rebalancing', desc: 'Automatisch alle 3–6 Monate', color: '#a855f7' },
+  { icon: '🛑', title: 'Stop-Loss & Gewinnsicherung', desc: 'Trailing Stops auf alle Positionen', color: '#ef4444' },
+  { icon: '📊', title: 'Kontrolliertes Risiko/Position', desc: 'Max 5% Verlustrisiko pro Titel', color: '#eab308' },
+  { icon: '🤖', title: 'KI-gestützte Marktanalyse', desc: 'Echtzeit-Signale & Anomalie-Detektion', color: '#22c55e' },
+  { icon: '📡', title: 'Marktüberwachung 24/7', desc: 'Globale Echtzeit-Überwachung', color: '#3b82f6' },
+  { icon: '💧', title: 'Liquiditätsmanagement', desc: 'Sofortige Verfügbarkeit gesichert', color: '#06b6d4' },
+  { icon: '📉', title: 'Volatilitätskontrolle', desc: 'VIX-basierte Absicherungslogik', color: '#ec4899' },
+  { icon: '🏛️', title: 'Inflationsschutz', desc: 'Gold, Anleihen & Sachwerte', color: '#eab308' },
+  { icon: '🌱', title: 'Langfristige Vermögensstrategie', desc: '10-Jahres-Horizont, Zinseszins', color: '#22c55e' },
+];
+
+const scenarios = {
+  conservative: {
+    label: 'Conservative (12%)',
+    data: [100000, 112000, 125440, 140493, 157352, 176234],
+    color: '#3b82f6',
+    p1y: '€112.000', p3y: '€140.493', p5y: '€176.234', cagr: '12%'
+  },
+  balanced: {
+    label: 'Balanced (18.5%)',
+    data: [100000, 118500, 140423, 166400, 197184, 233622],
+    color: '#a855f7',
+    p1y: '€118.500', p3y: '€166.400', p5y: '€233.622', cagr: '18.5%'
+  },
+  aggressive: {
+    label: 'Aggressive (25%)',
+    data: [100000, 125000, 156250, 195313, 244141, 305176],
+    color: '#f97316',
+    p1y: '€125.000', p3y: '€195.313', p5y: '€305.176', cagr: '25%'
+  }
+};
+let currentScenario = 'balanced';
+let projChart = null;
+
+/* ─── ANIMATED COUNTER ─── */
+function animateCounter(el, target, prefix='', suffix='', duration=2000, decimals=0) {
+  let start = 0; const step = 16;
+  const inc = target / (duration / step);
+  const timer = setInterval(() => {
+    start = Math.min(start + inc, target);
+    const val = decimals > 0 ? start.toFixed(decimals) : Math.floor(start);
+    const formatted = typeof val === 'number' ? val.toLocaleString('de-DE') : Number(val).toLocaleString('de-DE',{minimumFractionDigits:decimals, maximumFractionDigits:decimals});
+    el.textContent = prefix + formatted + suffix;
+    if (start >= target) clearInterval(timer);
+  }, step);
+}
+
+/* ─── SPARKLINE ─── */
+function createSparkline(id, values, color) {
+  const ctx = document.getElementById(id);
+  if (!ctx) return;
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: values.map((_,i) => i),
+      datasets: [{ data: values, borderColor: color, borderWidth: 2, fill: true,
+        backgroundColor: (ctx) => {
+          const g = ctx.chart.ctx.createLinearGradient(0,0,0,60);
+          g.addColorStop(0, color+'40'); g.addColorStop(1, color+'00');
+          return g;
+        },
+        tension: 0.4, pointRadius: 0 }]
+    },
+    options: { plugins:{legend:{display:false}}, scales:{x:{display:false},y:{display:false}}, animation:{duration:1200} }
+  });
+}
+
+/* ─── BUILD ALLOC BARS ─── */
+function buildAllocBars() {
+  const cont = document.getElementById('alloc-bars');
+  if (!cont) return;
+  cont.innerHTML = '';
+  allocData.forEach(a => {
+    const div = document.createElement('div');
+    div.className = 'glass rounded-2xl p-4 hover-lift mb-3';
+    div.style.borderColor = a.color + '33';
+    div.innerHTML = `
+      <div class="flex justify-between items-center mb-2">
+        <span class="font-medium text-sm">${a.label}</span>
+        <span class="font-bold text-sm" style="color:${a.color};">${a.pct}% · €${a.eur.toLocaleString('de-DE')}</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="background:${a.color};" data-width="${a.pct * 4}"></div></div>`;
+    cont.appendChild(div);
+  });
+}
+
+/* ─── ETF STOCKS ─── */
+function buildEtfStocks() {
+  const cont = document.getElementById('etf-stocks');
+  if (!cont) return;
+  cont.innerHTML = etfStocks.map(s => `
+    <div class="glass rounded-xl p-3 hover-lift mb-2 flex justify-between items-center">
+      <div>
+        <div class="font-medium text-sm">${s.name}</div>
+        <div class="section-label">${s.sym}</div>
+      </div>
+      <span class="text-sm font-bold ${s.up ? 'text-green-400' : 'text-red-400'}">${s.chg}</span>
+    </div>`).join('');
+}
+
+/* ─── AI STOCKS ─── */
+function buildAiStocks() {
+  const cont = document.getElementById('ai-stocks');
+  if (!cont) return;
+  cont.innerHTML = aiStocks.map(s => `
+    <div class="glass rounded-xl p-4 hover-lift flex items-center gap-3">
+      <div class="w-2 h-8 rounded-full" style="background:${s.color};"></div>
+      <div class="flex-1"><div class="font-medium text-sm">${s.name}</div>
+        <div class="progress-bar mt-1"><div class="progress-fill" style="background:${s.color};" data-width="${s.weight * 3.3}"></div></div>
+      </div>
+      <span class="font-bold text-sm" style="color:${s.color};">${s.weight}%</span>
+    </div>`).join('');
+}
+
+/* ─── RISK FEATURES ─── */
+function buildRiskFeatures() {
+  const cont = document.getElementById('risk-features');
+  if (!cont) return;
+  cont.innerHTML = '';
+  riskFeatures.forEach(r => {
+    const div = document.createElement('div');
+    div.className = 'glass rounded-xl p-4 hover-lift flex items-start gap-3';
+    div.style.borderColor = r.color + '22';
+    div.innerHTML = `<span class="text-xl">${r.icon}</span>
+      <div><div class="font-semibold text-sm mb-1" style="color:${r.color};">${r.title}</div>
+      <div class="text-xs text-gray-400">${r.desc}</div></div>`;
+    cont.appendChild(div);
+  });
+}
+
+/* ─── CHARTS ─── */
+function initPortfolioChart() {
+  const ctx = document.getElementById('portfolioChart');
+  if (!ctx) return;
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: allocData.map(a => a.label),
+      datasets: [{ data: allocData.map(a => a.pct), backgroundColor: allocData.map(a => a.color + 'cc'), borderColor: allocData.map(a => a.color), borderWidth: 2, hoverOffset: 8 }]
+    },
+    options: {
+      cutout: '65%',
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.parsed}%` } }
+      },
+      animation: { animateRotate: true, duration: 1500 }
+    }
+  });
+}
+
+function initAllocationChart() {
+  const ctx = document.getElementById('allocationChart');
+  if (!ctx) return;
+  new Chart(ctx, {
+    type: 'polarArea',
+    data: {
+      labels: allocData.map(a => a.label),
+      datasets: [{ data: allocData.map(a => a.pct), backgroundColor: allocData.map(a => a.color + '88'), borderColor: allocData.map(a => a.color), borderWidth: 1.5 }]
+    },
+    options: {
+      plugins: { legend: { labels: { color: '#94a3b8', font: { size: 10 } } } },
+      scales: { r: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { display: false } } },
+      animation: { duration: 1500 }
+    }
+  });
+}
+
+function initETFChart() {
+  const ctx = document.getElementById('etfChart');
+  if (!ctx) return;
+  const months = ['Jan','Feb','Mär','Apr','Mai','Jun','Jul','Aug','Sep','Okt','Nov','Dez'];
+  const sp500 = [100,103,107,105,110,115,112,119,124,121,127,125];
+  const nasdaq = [100,105,110,108,115,122,118,127,133,130,138,136];
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: months,
+      datasets: [
+        { label: 'S&P 500', data: sp500, borderColor: '#3b82f6', backgroundColor: '#3b82f615', fill: true, tension: 0.4, pointRadius: 3 },
+        { label: 'Nasdaq', data: nasdaq, borderColor: '#06b6d4', backgroundColor: '#06b6d410', fill: true, tension: 0.4, pointRadius: 3 }
+      ]
+    },
+    options: {
+      plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#64748b', font: { size: 10 } } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#64748b', font: { size: 10 } } }
+      },
+      animation: { duration: 1500 }
+    }
+  });
+}
+
+function initAIChart() {
+  const ctx = document.getElementById('aiChart');
+  if (!ctx) return;
+  const years = ['2020','2021','2022','2023','2024','2025','2026','2027'];
+  const aiMarket = [50, 70, 95, 140, 200, 290, 420, 600];
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: years,
+      datasets: [{ label: 'AI Market ($B)', data: aiMarket, backgroundColor: years.map((_,i)=>`rgba(168,85,247,${0.4 + i*0.08})`), borderColor: '#a855f7', borderWidth: 1, borderRadius: 6 }]
+    },
+    options: {
+      plugins: { legend: { labels: { color: '#94a3b8' } } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#64748b' } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#64748b' } }
+      },
+      animation: { duration: 1500 }
+    }
+  });
+}
+
+function initCryptoCharts() {
+  function mini(id, vals, col) {
+    const ctx = document.getElementById(id);
+    if (!ctx) return;
+    new Chart(ctx, {
+      type: 'line',
+      data: { labels: vals.map((_,i)=>i), datasets: [{ data: vals, borderColor: col, borderWidth: 2, fill: true,
+        backgroundColor: (c) => { const g = c.chart.ctx.createLinearGradient(0,0,0,80); g.addColorStop(0,col+'50'); g.addColorStop(1,col+'00'); return g; },
+        tension: 0.5, pointRadius: 0 }] },
+      options: { plugins:{legend:{display:false}}, scales:{x:{display:false},y:{display:false}}, animation:{duration:1200} }
+    });
+  }
+  mini('btcChart', [28000,32000,35000,30000,38000,42000,45000,52000,58000,64000,71000,68000], '#f97316');
+  mini('ethChart', [1800,2100,2400,2000,2600,2800,3000,3400,3800,3200,3500,3300], '#6366f1');
+  mini('altChart', [100,130,110,160,200,180,250,310,280,350,420,390], '#22c55e');
+
+  // Dominance chart
+  const ctx = document.getElementById('domChart');
+  if (!ctx) return;
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['Bitcoin','Ethereum','Others'],
+      datasets: [{ data: [52, 18, 30], backgroundColor: ['#f97316cc','#6366f1cc','#94a3b888'], borderColor: ['#f97316','#6366f1','#475569'], borderWidth: 2, hoverOffset: 5 }]
+    },
+    options: { cutout: '60%', plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } }, animation: { duration: 1500 } }
+  });
+}
+
+function initRiskChart() {
+  const ctx = document.getElementById('riskChart');
+  if (!ctx) return;
+  new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: ['Marktrisiko','Kreditrisiko','Liquidität','Währung','Inflation','Korrelation'],
+      datasets: [
+        { label: 'Portfolio Risiko', data: [4, 2, 8, 5, 3, 6], borderColor: '#ef4444', backgroundColor: '#ef444420', borderWidth: 2, pointBackgroundColor: '#ef4444', pointRadius: 4 },
+        { label: 'Benchmark', data: [7, 5, 6, 7, 5, 7], borderColor: '#06b6d4', backgroundColor: '#06b6d410', borderWidth: 1.5, pointBackgroundColor: '#06b6d4', pointRadius: 3 }
+      ]
+    },
+    options: {
+      scales: { r: { grid: { color: 'rgba(255,255,255,0.06)' }, ticks: { display: false }, pointLabels: { color: '#94a3b8', font: { size: 10 } }, suggestedMin: 0, suggestedMax: 10 } },
+      plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
+      animation: { duration: 1500 }
+    }
+  });
+}
+
+function initProjectionChart(scenario) {
+  const ctx = document.getElementById('projectionChart');
+  if (!ctx) return;
+  const s = scenarios[scenario];
+  const labels = ['2025','2026','2027','2028','2029','2030'];
+  if (projChart) { projChart.destroy(); }
+  projChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { label: s.label, data: s.data, borderColor: s.color, backgroundColor: s.color + '20', fill: true, tension: 0.4, borderWidth: 3, pointBackgroundColor: s.color, pointRadius: 5 },
+        { label: 'Startkapital', data: [100000,100000,100000,100000,100000,100000], borderColor: 'rgba(255,255,255,0.2)', borderDash: [5,5], borderWidth: 1, fill: false, pointRadius: 0, tension: 0 }
+      ]
+    },
+    options: {
+      plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#64748b' } },
+        y: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#64748b', callback: v => '€' + (v/1000).toFixed(0) + 'k' } }
+      },
+      animation: { duration: 1000, easing: 'easeInOutCubic' }
+    }
+  });
+}
+
+window.switchScenario = function(s) {
+  currentScenario = s;
+  const sc = scenarios[s];
+  document.getElementById('p1y').textContent = sc.p1y;
+  document.getElementById('p3y').textContent = sc.p3y;
+  document.getElementById('p5y').textContent = sc.p5y;
+  document.getElementById('pcagr').textContent = sc.cagr;
+  // Reset tab styles
+  ['conservative','balanced','aggressive'].forEach(k => {
+    const colors = {conservative:'59,130,246', balanced:'168,85,247', aggressive:'249,115,22'};
+    const btn = document.getElementById('tab-' + k);
+    if (!btn) return;
+    if (k === s) {
+      btn.style.background = `rgba(${colors[k]},0.3)`;
+      btn.style.borderColor = `rgba(${colors[k]},0.6)`;
+      btn.style.color = `rgb(${colors[k]})`;
+    } else {
+      btn.style.background = `rgba(${colors[k]},0.1)`;
+      btn.style.borderColor = `rgba(${colors[k]},0.2)`;
+      btn.style.color = `rgba(${colors[k]},0.7)`;
+    }
+  });
+  initProjectionChart(s);
+};
+
+/* ─── PROGRESS BARS ANIMATION ─── */
+function animateProgressBars(container) {
+  const bars = (container || document).querySelectorAll('.progress-fill');
+  bars.forEach(bar => {
+    const w = bar.dataset.width || 0;
+    setTimeout(() => { bar.style.width = w + '%'; }, 100);
+  });
+}
+
+/* ─── GSAP SCROLL TRIGGERS ─── */
+function initAnimations() {
+  // Fade sections
+  gsap.utils.toArray('.fade-section').forEach(section => {
+    gsap.fromTo(section, { opacity: 0, y: 40 }, {
+      opacity: 1, y: 0, duration: 0.8, ease: 'power3.out',
+      scrollTrigger: { trigger: section, start: 'top 85%', once: true }
+    });
+  });
+
+  // VIP features stagger
+  gsap.utils.toArray('.vip-feature').forEach((el, i) => {
+    gsap.from(el, { opacity: 0, y: 20, delay: i * 0.1, duration: 0.5, ease: 'power2.out',
+      scrollTrigger: { trigger: el, start: 'top 90%', once: true } });
+  });
+}
+
+/* ─── INIT ─── */
+document.addEventListener('DOMContentLoaded', () => {
+  buildAllocBars();
+  buildEtfStocks();
+  buildAiStocks();
+  buildRiskFeatures();
+  animateProgressBars();
+
+  initPortfolioChart();
+  initAllocationChart();
+  initETFChart();
+  initAIChart();
+  initCryptoCharts();
+  initRiskChart();
+  initProjectionChart('balanced');
+
+  // Sparklines
+  createSparkline('spark1', [95,97,103,101,107,110,108,114,118,116,121,125], '#3b82f6');
+  createSparkline('spark2', [28,32,35,30,38,42,45,52,58,64,71,68].map(v=>v*1000), '#f97316');
+  createSparkline('spark3', [1800,1850,1870,1890,1920,1960,1990,2010,2050,2080,2120,2140], '#eab308');
+  createSparkline('spark4', [200,250,300,280,350,450,520,610,750,850,920,980], '#a855f7');
+
+  // Counters
+  setTimeout(() => {
+    animateCounter(document.getElementById('capitalCounter'), 100000, '€', '', 2000);
+    animateCounter(document.getElementById('returnCounter'), 18.5, '', '%', 1500, 1);
+    animateCounter(document.getElementById('sharpeCounter'), 1.42, '', '', 1500, 2);
+    animateCounter(document.getElementById('projCapCounter'), 166400, '', '', 2500);
+  }, 300);
+
+  initAnimations();
+
+  // Re-animate progress bars on scroll
+  ScrollTrigger.create({
+    trigger: '#allocation',
+    start: 'top 80%',
+    once: true,
+    onEnter: () => animateProgressBars()
+  });
+});
+</script>
+</body>
+</html>
